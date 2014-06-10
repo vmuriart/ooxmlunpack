@@ -1,4 +1,4 @@
-Storing Excel Files Efficiently
+# Storing Excel Files Efficiently #
 
 http://hgbook.red-bean.com/read/behind-the-scenes.html#x8-640004 - provides information about how Mercurial stores revisions of files internally.
 
