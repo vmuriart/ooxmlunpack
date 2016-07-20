@@ -11,7 +11,14 @@
     using System.Windows.Forms;
     using System.Xml.Linq;
 
+    using Com.AriadneInsight.Schematiq.Parser;
+    using Com.AriadneInsight.Schematiq.Parser.Addresses;
+    using Com.AriadneInsight.Schematiq.Parser.Parsing;
+    using Com.AriadneInsight.Schematiq.Parser.Parsing.Nodes;
+
     using Ionic.Zip;
+
+    using OoXmlUnpack.Graph;
 
     using CompressionLevel = Ionic.Zlib.CompressionLevel;
 
@@ -27,6 +34,7 @@
         private static readonly bool RelativeCellRefs = ConfigFlag("RelativeCellRefs", false);
         private static readonly bool RemoveStyles = ConfigFlag("RemoveStyles", false);
         private static readonly bool RemoveFormulaTypes = ConfigFlag("RemoveFormulaTypes", false);
+        private static readonly bool CodeStyleOutput = ConfigFlag("CodeStyleOutput", false);
         private static readonly bool Quiet = ConfigFlag("Quiet", false);
 
         static Dictionary<int, XElement> SharedStrings = new Dictionary<int, XElement>();
@@ -52,6 +60,7 @@
                 message.AppendLine(string.Format("\tRelativeCellRefs: {0}", RelativeCellRefs));
                 message.AppendLine(string.Format("\tRemoveStyles: {0}", RemoveStyles));
                 message.AppendLine(string.Format("\tRemoveFormulaTypes: {0}", RemoveFormulaTypes));
+                message.AppendLine(string.Format("\tCodeStyleOutput: {0}", CodeStyleOutput));
                 message.AppendLine(string.Format("\tQuiet: {0}", Quiet));
                 message.AppendLine(string.Format("(options can be set in the app.config file)"));
                 if (MessageBox.Show(
@@ -151,7 +160,7 @@
         {
             foreach (var file in new DirectoryInfo(extractFolder).EnumerateFiles())
             {
-                ProcessExtractedFile(file.FullName);
+                ProcessExtractedFile(file);
             }
 
             foreach (var folder in new DirectoryInfo(extractFolder).EnumerateDirectories())
@@ -160,20 +169,26 @@
             }
         }
 
-        private static void ProcessExtractedFile(string fileName)
+        private static void ProcessExtractedFile(FileInfo file)
         {
-            if (Path.GetFileName(fileName) == "calcChain.xml")
+            if (file.Name == "calcChain.xml")
             {
-                File.Delete(fileName);
+                file.Delete();
+                return;
+            }
+
+            if (CodeStyleOutput && Regex.IsMatch(file.Name, @"sheet\d+.xml") && file.Directory.Name == "worksheets")
+            {
+                new SheetToGraph(file).ConvertToCode();
                 return;
             }
             
             XDocument doc;
             try
             {
-                doc = XDocument.Load(fileName);
+                doc = XDocument.Load(file.FullName);
 
-                Console.WriteLine(fileName);
+                Console.WriteLine(file);
             }
             catch
             {
@@ -182,24 +197,67 @@
 
             if (RelativeCellRefs || RemoveStyles || RemoveFormulaTypes || InlineStrings)
             {
-                UpdateDocument(fileName, doc);
+                UpdateDocument(file, doc);
             }
-
+            
             try
             {
-                doc.Save(fileName);
+                doc.Save(file.FullName);
             }
             catch
             {
             }
         }
 
-        private static void UpdateDocument(string fileName, XDocument doc)
+        public static List<T> TopoSort<T>(IEnumerable<T> source, Func<T, IEnumerable<T>> getDependencies)
+        {
+            var sorted = new List<T>();
+            var visited = new Dictionary<T, bool>();
+
+            foreach (var item in source)
+            {
+                Visit(item, getDependencies, sorted, visited);
+            }
+
+            return sorted;
+        }
+
+        public static void Visit<T>(T item, Func<T, IEnumerable<T>> getDependencies, List<T> sorted, Dictionary<T, bool> visited)
+        {
+            bool inProgress;
+            var alreadyVisited = visited.TryGetValue(item, out inProgress);
+
+            if (alreadyVisited)
+            {
+                if (inProgress)
+                {
+                    throw new ArgumentException("Cyclic dependency found.");
+                }
+            }
+            else
+            {
+                visited[item] = true;
+
+                var dependencies = getDependencies(item);
+                if (dependencies != null)
+                {
+                    foreach (var dependency in dependencies)
+                    {
+                        Visit(dependency, getDependencies, sorted, visited);
+                    }
+                }
+
+                visited[item] = false;
+                sorted.Add(item);
+            }
+        }
+        
+        private static void UpdateDocument(FileInfo file, XDocument doc)
         {
             var ns = doc.Root.Name.Namespace;
             if (InlineStrings)
             {
-                if (Path.GetFileName(fileName) == "sharedStrings.xml")
+                if (file.Name == "sharedStrings.xml")
                 {
                     int sharedStringId = 0;
                     int keptSharedStringId = 0;

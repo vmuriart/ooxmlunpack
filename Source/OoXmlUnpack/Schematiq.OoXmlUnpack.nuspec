@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <version>0.00</version>
+    <authors>Ariadne Insight Ltd</authors>
+    <owners>Ariadne Insight Ltd</owners>
+    <id>Schematiq.OoXmlUnpack</id>
+    <title>Schematiq Open Office XML Unpack</title>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Description</description>
+    <copyright>Copyright Ariadne Insight Ltd 2016</copyright>
+  </metadata>
+  <files>
+    <file src="OoXmlUnpack\bin\Release\OoXmlUnpack.exe" target="lib\Schematiq.OoXmlUnpack.dll" />
+  </files>
+</package>

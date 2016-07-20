@@ -35,8 +35,15 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Com.AriadneInsight.Schematiq.Interop">
+      <HintPath>..\packages\Schematiq.Interop.2.0.59\lib\Com.AriadneInsight.Schematiq.Interop.dll</HintPath>
+    </Reference>
     <Reference Include="Ionic.Zip">
       <HintPath>..\packages\DotNetZip.1.9.3\lib\net20\Ionic.Zip.dll</HintPath>
+    </Reference>
+    <Reference Include="Schematiq.Parser, Version=2.5.0.0, Culture=neutral, PublicKeyToken=c072ee2255e9fc95, processorArchitecture=MSIL">
+      <HintPath>..\packages\Schematiq.Parser.2.5.83\lib\Schematiq.Parser.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -51,6 +58,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AddressComparer.cs" />
+    <Compile Include="Graph\GraphNode.cs" />
+    <Compile Include="Graph\SheetToGraph.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
