@@ -1,4 +1,4 @@
-namespace OoXmlUnpack.Graph
+namespace OoXml.Graph
 {
     using System;
     using System.Collections.Generic;

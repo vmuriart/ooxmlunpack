@@ -4,3 +4,5 @@ bin
 *.csproj.user
 obj
 packages
+StyleCop.Cache
+*.DotSettings.user

@@ -4,23 +4,11 @@
     using System.Collections.Generic;
     using System.Configuration;
     using System.IO;
-    using System.Linq;
     using System.Reflection;
     using System.Text;
-    using System.Text.RegularExpressions;
     using System.Windows.Forms;
-    using System.Xml.Linq;
 
-    using Com.AriadneInsight.Schematiq.Parser;
-    using Com.AriadneInsight.Schematiq.Parser.Addresses;
-    using Com.AriadneInsight.Schematiq.Parser.Parsing;
-    using Com.AriadneInsight.Schematiq.Parser.Parsing.Nodes;
-
-    using Ionic.Zip;
-
-    using OoXmlUnpack.Graph;
-
-    using CompressionLevel = Ionic.Zlib.CompressionLevel;
+    using OoXml;
 
     public static class Program
     {
@@ -37,14 +25,9 @@
         private static readonly bool CodeStyleOutput = ConfigFlag("CodeStyleOutput", false);
         private static readonly bool Quiet = ConfigFlag("Quiet", false);
 
-        static Dictionary<int, XElement> SharedStrings = new Dictionary<int, XElement>();
-        static Dictionary<int, int> KeptSharedStrings = new Dictionary<int, int>();
- 
         static void Main()
         {
-            var sourcePath = string.IsNullOrEmpty(SourcePath)
-                                 ? Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)
-                                 : SourcePath;
+            var sourcePath = string.IsNullOrEmpty(SourcePath) ? Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) : SourcePath;
 
             if (!Quiet)
             {
@@ -63,11 +46,8 @@
                 message.AppendLine(string.Format("\tCodeStyleOutput: {0}", CodeStyleOutput));
                 message.AppendLine(string.Format("\tQuiet: {0}", Quiet));
                 message.AppendLine(string.Format("(options can be set in the app.config file)"));
-                if (MessageBox.Show(
-                    message.ToString(),
-                    "Office Open XML Unpack Utility",
-                    MessageBoxButtons.OKCancel,
-                    MessageBoxIcon.Question) == DialogResult.Cancel)
+                if (MessageBox.Show(message.ToString(), "Office Open XML Unpack Utility", MessageBoxButtons.OKCancel, MessageBoxIcon.Question)
+                    == DialogResult.Cancel)
                 {
                     return;
                 }
@@ -75,7 +55,20 @@
 
             try
             {
-                ProcessPath(sourcePath);
+                var unpack = new Unpack(
+                    KeepBackupCopy,
+                    ProcessExtractedFiles,
+                    StripValues,
+                    false,
+                    InlineStrings,
+                    KeepExtractedFiles,
+                    false,
+                    RemoveStyles,
+                    false,
+                    RemoveFormulaTypes,
+                    CodeStyleOutput,
+                    RelativeCellRefs);
+                ProcessPath(unpack, sourcePath);
             }
             catch (Exception ex)
             {
@@ -84,128 +77,19 @@
             }
         }
 
-        private static void ProcessPath(string sourcePath)
+        private static void ProcessPath(Unpack unpack, string sourcePath)
         {
             foreach (var file in new DirectoryInfo(sourcePath).EnumerateFiles())
             {
                 if (file.Extension == ".xlsx" || file.Extension == ".xlsm")
                 {
-                    ProcessExcelFile(file.FullName);
+                    unpack.ProcessExcelFile(file.FullName);
                 }
             }
 
             foreach (var folder in new DirectoryInfo(sourcePath).EnumerateDirectories())
             {
-                ProcessPath(folder.FullName);
-            }
-        }
-
-        private static void ProcessExcelFile(string sourceFile)
-        {
-            var destFile = sourceFile;
-            var extractFolder = sourceFile + ".extracted";
-            var extractDir = new DirectoryInfo(extractFolder);
-            if (Directory.Exists(extractFolder))
-            {
-                ////if (extractDir.LastWriteTime == new FileInfo(sourceFile).LastAccessTime)
-                ////{
-                ////    return;
-                ////}
-
-                Directory.Delete(extractFolder, true);
-            }
-
-            Console.WriteLine("File: " + sourceFile);
-
-            if (KeepBackupCopy)
-            {
-                File.Copy(sourceFile, sourceFile + ".orig", true);
-            }
-
-            using (var zipFile = new ZipFile(sourceFile))
-            {
-                zipFile.ExtractAll(extractFolder);
-            }
-
-            if (ProcessExtractedFiles)
-            {
-                ProcessExtractedFolder(extractFolder);
-            }
-
-            File.Delete(destFile);
-
-            using (var zipFile = new ZipFile(sourceFile))
-            {
-                zipFile.CompressionMethod = CompressionMethod.None;
-                zipFile.CompressionLevel = CompressionLevel.Level0;
-                zipFile.AddSelectedFiles("*.*", extractFolder, string.Empty, true);
-                zipFile.Save();
-            }
-
-            if (!KeepExtractedFiles)
-            {
-                Directory.Delete(extractFolder, true);
-            }
-            else
-            {
-                // Make sure the modified date of the extract folder is the same as the decompressed, repacked source file
-                extractDir.LastWriteTime = new FileInfo(sourceFile).LastAccessTime;
-            }
-
-            SharedStrings.Clear();
-            KeptSharedStrings.Clear();
-        }
-
-        private static void ProcessExtractedFolder(string extractFolder)
-        {
-            foreach (var file in new DirectoryInfo(extractFolder).EnumerateFiles())
-            {
-                ProcessExtractedFile(file);
-            }
-
-            foreach (var folder in new DirectoryInfo(extractFolder).EnumerateDirectories())
-            {
-                ProcessExtractedFolder(folder.FullName);
-            }
-        }
-
-        private static void ProcessExtractedFile(FileInfo file)
-        {
-            if (file.Name == "calcChain.xml")
-            {
-                file.Delete();
-                return;
-            }
-
-            if (CodeStyleOutput && Regex.IsMatch(file.Name, @"sheet\d+.xml") && file.Directory.Name == "worksheets")
-            {
-                new SheetToGraph(file).ConvertToCode();
-                return;
-            }
-            
-            XDocument doc;
-            try
-            {
-                doc = XDocument.Load(file.FullName);
-
-                Console.WriteLine(file);
-            }
-            catch
-            {
-                return;
-            }
-
-            if (RelativeCellRefs || RemoveStyles || RemoveFormulaTypes || InlineStrings)
-            {
-                UpdateDocument(file, doc);
-            }
-            
-            try
-            {
-                doc.Save(file.FullName);
-            }
-            catch
-            {
+                ProcessPath(unpack, folder.FullName);
             }
         }
 
@@ -222,7 +106,7 @@
             return sorted;
         }
 
-        public static void Visit<T>(T item, Func<T, IEnumerable<T>> getDependencies, List<T> sorted, Dictionary<T, bool> visited)
+        private static void Visit<T>(T item, Func<T, IEnumerable<T>> getDependencies, List<T> sorted, Dictionary<T, bool> visited)
         {
             bool inProgress;
             var alreadyVisited = visited.TryGetValue(item, out inProgress);
@@ -250,118 +134,6 @@
                 visited[item] = false;
                 sorted.Add(item);
             }
-        }
-        
-        private static void UpdateDocument(FileInfo file, XDocument doc)
-        {
-            var ns = doc.Root.Name.Namespace;
-            if (InlineStrings)
-            {
-                if (file.Name == "sharedStrings.xml")
-                {
-                    int sharedStringId = 0;
-                    int keptSharedStringId = 0;
-                    foreach (var sharedString in doc.Root.Elements(ns + "si").ToList())
-                    {
-                        if (sharedString.Element(ns + "t") == null)
-                        {
-                            KeptSharedStrings.Add(sharedStringId, keptSharedStringId);
-                            keptSharedStringId++;
-                        }
-                        else
-                        {
-                            SharedStrings.Add(sharedStringId, sharedString);
-                            sharedString.Remove();
-                        }
-
-                        sharedStringId++;
-                    }
-
-                    doc.Root.Attribute("count").Value = "0";
-                    doc.Root.Attribute("uniqueCount").Value = "0";
-                }
-            }
-            
-            int previousRow = 0;
-            foreach (var row in doc.Descendants(ns + "row"))
-            {
-                if (RelativeCellRefs && row.Attribute("r") != null)
-                {
-                    var currentRow = int.Parse(row.Attribute("r").Value);
-                    row.Attribute("r").Value = "+" + (currentRow - previousRow);
-
-                    previousRow = currentRow;
-                }
-
-                int previousColumn = 0;
-                foreach (var cell in row.Elements(ns + "c"))
-                {
-                    var formula = cell.Element(ns + "f");
-                    var value = cell.Element(ns + "v");
-
-                    if (RelativeCellRefs && cell.Attribute("r") != null)
-                    {
-                        var currentColumn = Regex.Match(cell.Attribute("r").Value, "[A-Z]+").Groups[0].Value.Aggregate(
-                            0,
-                            (r, c) => r * 26 + c - '@');
-                        cell.Attribute("r").Value = "+" + (currentColumn - previousColumn);
-
-                        previousColumn = currentColumn;
-                    }
-
-                    if (RemoveStyles && cell.Attribute("s") != null)
-                    {
-                        cell.Attribute("s").Remove();
-                    }
-
-                    if (RemoveFormulaTypes && cell.Attributes("t") != null && cell.Elements().Count() == 1
-                        && cell.Elements().Single().Name == (ns + "f"))
-                    {
-                        cell.Attributes("t").Remove();
-                    }
-
-                    if (formula != null)
-                    {
-                        if (StripValues)
-                        {
-                            if (value != null)
-                            {
-                                value.Remove();
-                            }
-
-                            if (cell.Attribute("t") != null)
-                            {
-                                cell.Attribute("t").Remove();
-                            }
-                        }
-                    }
-                    else if (value != null && cell.Attribute("t") != null && cell.Attribute("t").Value == "s")
-                    {
-                        if (InlineStrings)
-                        {
-                            var sharedStringId = int.Parse(value.Value);
-                            int keptSharedStringId;
-                            if (KeptSharedStrings.TryGetValue(sharedStringId, out keptSharedStringId))
-                            {
-                                value.Value = keptSharedStringId.ToString();
-                            }
-                            else
-                            {
-                                var sharedString = SharedStrings[sharedStringId];
-                                value.Remove();
-                                cell.Add(new XElement(ns + "is", sharedString.Descendants()));
-                                cell.Attribute("t").Value = "inlineStr";
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        public static long DirSize(DirectoryInfo dir)
-        {
-            return dir.EnumerateDirectories().Select(DirSize).Sum()
-                   + dir.EnumerateFiles().Select(f => f.Length).Sum();
         }
 
         private static bool ConfigFlag(string key, bool defaultValue)
