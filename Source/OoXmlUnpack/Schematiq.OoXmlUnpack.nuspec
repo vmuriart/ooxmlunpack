@@ -11,6 +11,6 @@
     <copyright>Copyright Ariadne Insight Ltd 2016</copyright>
   </metadata>
   <files>
-    <file src="OoXmlUnpack\bin\Debug\OoXmlUnpack.exe" target="lib\Schematiq.OoXmlUnpack.dll" />
+    <file src="OoXmlUnpack\bin\Debug\OoXmlUnpack.exe" target="lib\net40\OoXmlUnpack.dll" />
   </files>
 </package>
