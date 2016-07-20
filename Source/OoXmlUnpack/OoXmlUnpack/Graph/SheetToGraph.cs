@@ -76,22 +76,22 @@ namespace OoXmlUnpack.Graph
                 var current = cellFormulas.First();
 
                 // We want to find columns of cells which contain the same (R1C1) formula
-                var rows = 0;
+                var rows = new OneBasedIndex(1);
                 IAddress cellBelow;
                 ExcelFormula<A1Style> formulaBelow;
                 do
                 {
                     rows++;
-                    cellBelow = current.Key[rows, 0];
+                    cellBelow = current.Key[rows, new OneBasedIndex(1)];
                 }
                 while (current.Value != null && cellFormulas.TryGetValue(cellBelow, out formulaBelow)
                        && formulaBelow != null
                        && formulaBelow.ToR1C1Style(cellBelow).Equals(current.Value.ToR1C1Style(current.Key)));
 
-                var bottomRight = current.Key.Resize(rows, 1).BottomRight;
-                for (var i = 0; i < rows; i++)
+                var bottomRight = current.Key.Resize(rows.Value - 1, 1).BottomRight;
+                for (var i = new OneBasedIndex(1); i <= rows; i++)
                 {
-                    var cellAddress = current.Key[i, 0];
+                    var cellAddress = current.Key[i, new OneBasedIndex(1)];
                     var multiAddress = bottomRight.Union(cellAddress);
                     nodes.Add(cellAddress, new GraphNode<IAddress, ExcelFormula<A1Style>>(multiAddress, cellFormulas[cellAddress]));
                     cellFormulas.Remove(cellAddress);
@@ -117,7 +117,7 @@ namespace OoXmlUnpack.Graph
                     {
                         for (var j = 0; j < referencedAddress.Columns; j++)
                         {
-                            var referencedCell = referencedAddress[i, j];
+                            var referencedCell = referencedAddress[new OneBasedIndex(i + 1), new OneBasedIndex(j + 1)];
                             GraphNode<IAddress, ExcelFormula<A1Style>> referencedFormula;
                             if (nodes.TryGetValue(referencedCell, out referencedFormula))
                             {
