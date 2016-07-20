@@ -1,4 +1,4 @@
-﻿namespace OoXmlUnpack
+﻿namespace OoXmlUnpack.Console
 {
     using System;
     using System.Collections.Generic;
@@ -7,8 +7,6 @@
     using System.Reflection;
     using System.Text;
     using System.Windows.Forms;
-
-    using OoXml;
 
     public static class Program
     {

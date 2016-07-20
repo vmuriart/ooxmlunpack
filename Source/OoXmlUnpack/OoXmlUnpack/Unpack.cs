@@ -7,7 +7,7 @@
 // </summary>
 // --------------------------------------------------------------------------------------------------------------------
 
-namespace OoXml
+namespace OoXmlUnpack
 {
     using System;
     using System.Collections.Generic;
@@ -19,7 +19,7 @@ namespace OoXml
     using Ionic.Zip;
     using Ionic.Zlib;
 
-    using OoXml.Graph;
+    using OoXmlUnpack.Graph;
 
     public class Unpack
     {
