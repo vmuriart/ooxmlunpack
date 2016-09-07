@@ -215,6 +215,11 @@ namespace OoXmlUnpack
                 ReplaceActiveCell(doc, "B1");
             }
 
+            if (file.Name == "workbook.xml")
+            {
+                ReplaceWorkbookLocalPath(doc, "Default");
+            }
+
             try
             {
                 doc.Save(file.FullName);
@@ -243,6 +248,13 @@ namespace OoXmlUnpack
                 element.ChangeOrAddAttribute("activeCell", activeCell);
                 element.ChangeOrAddAttribute("sqref", activeCell);
             }
+        }
+
+        private static void ReplaceWorkbookLocalPath(XDocument doc, string path)
+        {
+            var ns = doc.Root.GetNamespaceOfPrefix("mc");
+            var element = doc.Descendants(ns + "Choice").Elements().Single();
+            element.ChangeOrAddAttribute("url", path);
         }
 
         private void UpdateDocument(FileInfo file, XDocument doc)
