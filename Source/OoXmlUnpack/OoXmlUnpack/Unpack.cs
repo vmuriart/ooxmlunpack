@@ -208,12 +208,7 @@ namespace OoXmlUnpack
 
             if (file.Name == "core.xml")
             {
-                var ns = doc.Root.Name.Namespace;
-                var elementsToChange = doc.Descendants(ns + "lastModifiedBy");
-                foreach (var element in elementsToChange)
-                {
-                    element.Value = "User";
-                }
+                ReplaceXmlElement(doc, "lastModifiedBy", "User");
             }
 
             try
@@ -222,6 +217,16 @@ namespace OoXmlUnpack
             }
             catch
             {
+            }
+        }
+
+        private static void ReplaceXmlElement(XDocument doc, string elementNameToReplace, string valueToReplaceElementWith)
+        {
+            var ns = doc.Root.Name.Namespace;
+            var elementsToChange = doc.Descendants(ns + elementNameToReplace);
+            foreach (var element in elementsToChange)
+            {
+                element.Value = valueToReplaceElementWith;
             }
         }
 
