@@ -35,9 +35,10 @@ namespace OoXmlUnpack
         private readonly bool removeFormulaTypes;
         private readonly bool codeStyleOutput;
         private readonly bool relativeCellRefs;
+        private readonly bool lessDocDiffNoise;
         private readonly Dictionary<int, XElement> sharedStrings = new Dictionary<int, XElement>();
         private readonly Dictionary<int, int> keptSharedStrings = new Dictionary<int, int>();
-
+        
         public Unpack(
             bool keepBackupCopy = false,
             bool processExtractedFiles = true,
@@ -50,7 +51,7 @@ namespace OoXmlUnpack
             bool removeRowNumbers = false,
             bool removeFormulaTypes = false,
             bool codeStyleOutput = false,
-            bool relativeCellRefs = false)
+            bool relativeCellRefs = false, bool lessDocDiffNoise = false)
         {
             this.keepBackupCopy = keepBackupCopy;
             this.processExtractedFiles = processExtractedFiles;
@@ -64,6 +65,7 @@ namespace OoXmlUnpack
             this.removeFormulaTypes = removeFormulaTypes;
             this.codeStyleOutput = codeStyleOutput;
             this.relativeCellRefs = relativeCellRefs;
+            this.lessDocDiffNoise = lessDocDiffNoise;
         }
 
         public void ProcessExcelFile(string sourceFile, string extractFolder = null)
@@ -204,28 +206,34 @@ namespace OoXmlUnpack
                 this.UpdateDocument(file, doc);
             }
 
-            if (file.Name == "core.xml")
+            if (this.lessDocDiffNoise)
             {
-                ReplaceXmlElement(doc, "cp", "lastModifiedBy", "User");
-                ReplaceXmlElement(doc, "dcterms", "modified", "Not Set");
+                ReduceUnnecessaryMinorChangesInFiles(file, doc);
             }
-
-            if (Regex.IsMatch(file.Name, "sheet[0-9]+"))
-            {
-                ReplaceActiveCell(doc, "B1");
-            }
-
-            if (file.Name == "workbook.xml")
-            {
-                ReplaceWorkbookLocalPath(doc, "Default");
-            }
-
+            
             try
             {
                 doc.Save(file.FullName);
             }
             catch
             {
+            }
+        }
+
+        private static void ReduceUnnecessaryMinorChangesInFiles(FileInfo file, XDocument doc)
+        {
+            if (file.Name == "core.xml")
+            {
+                ReplaceXmlElement(doc, "cp", "lastModifiedBy", "User");
+                ReplaceXmlElement(doc, "dcterms", "modified", "Not Set");
+            }
+            else if (Regex.IsMatch(file.Name, "sheet[0-9]+"))
+            {
+                ReplaceActiveCell(doc, "B1");
+            }
+            else if (file.Name == "workbook.xml")
+            {
+                ReplaceWorkbookLocalPath(doc, "Default");
             }
         }
 

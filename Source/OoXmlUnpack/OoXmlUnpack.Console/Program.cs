@@ -22,6 +22,7 @@
         private static readonly bool RemoveFormulaTypes = ConfigFlag("RemoveFormulaTypes", false);
         private static readonly bool CodeStyleOutput = ConfigFlag("CodeStyleOutput", false);
         private static readonly bool Quiet = ConfigFlag("Quiet", false);
+        private static readonly bool LessDocDiffNoise = ConfigFlag("LessDocDiffNoise", true);
 
         static void Main()
         {
@@ -43,6 +44,7 @@
                 message.AppendLine(string.Format("\tRemoveFormulaTypes: {0}", RemoveFormulaTypes));
                 message.AppendLine(string.Format("\tCodeStyleOutput: {0}", CodeStyleOutput));
                 message.AppendLine(string.Format("\tQuiet: {0}", Quiet));
+                message.AppendLine(string.Format("\tLessDocDiffNoise: {0}", LessDocDiffNoise));
                 message.AppendLine(string.Format("(options can be set in the app.config file)"));
                 if (MessageBox.Show(message.ToString(), "Office Open XML Unpack Utility", MessageBoxButtons.OKCancel, MessageBoxIcon.Question)
                     == DialogResult.Cancel)
@@ -54,18 +56,19 @@
             try
             {
                 var unpack = new Unpack(
-                    KeepBackupCopy,
-                    ProcessExtractedFiles,
-                    StripValues,
-                    false,
-                    InlineStrings,
-                    KeepExtractedFiles,
-                    false,
-                    RemoveStyles,
-                    false,
-                    RemoveFormulaTypes,
-                    CodeStyleOutput,
-                    RelativeCellRefs);
+                                 KeepBackupCopy,
+                                 ProcessExtractedFiles,
+                                 StripValues,
+                                 false,
+                                 InlineStrings,
+                                 KeepExtractedFiles,
+                                 false,
+                                 RemoveStyles,
+                                 false,
+                                 RemoveFormulaTypes,
+                                 CodeStyleOutput,
+                                 RelativeCellRefs,
+                                 LessDocDiffNoise);
                 ProcessPath(unpack, sourcePath);
             }
             catch (Exception ex)
