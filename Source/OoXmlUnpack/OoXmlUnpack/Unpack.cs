@@ -206,11 +206,11 @@ namespace OoXmlUnpack
 
             if (file.Name == "core.xml")
             {
-                ReplaceXmlElement(doc, "lastModifiedBy", "User");
+                ReplaceXmlElement(doc, "cp", "lastModifiedBy", "User");
+                ReplaceXmlElement(doc, "dcterms", "modified", "Not Set");
             }
 
-            //Todo: regex match for any sheet number
-            if (file.Name == "sheet1.xml")
+            if (Regex.IsMatch(file.Name, "sheet[0-9]+"))
             {
                 ReplaceActiveCell(doc, "B1");
             }
@@ -229,25 +229,19 @@ namespace OoXmlUnpack
             }
         }
 
-        private static void ReplaceXmlElement(XDocument doc, string elementNameToReplace, string valueToReplaceElementWith)
+        private static void ReplaceXmlElement(XDocument doc, string namespacePrefix, string elementNameToReplace, string valueToReplaceElementWith)
         {
-            var ns = doc.Root.Name.Namespace;
-            var elementsToChange = doc.Descendants(ns + elementNameToReplace);
-            foreach (var element in elementsToChange)
-            {
-                element.Value = valueToReplaceElementWith;
-            }
+            var ns = doc.Root.GetNamespaceOfPrefix(namespacePrefix);
+            var element = doc.Descendants(ns + elementNameToReplace).Single();
+            element.Value = valueToReplaceElementWith;
         }
 
         private static void ReplaceActiveCell(XDocument doc, string activeCell)
         {
             var ns = doc.Root.Name.Namespace;
-            var elementsToChange = doc.Descendants(ns + "selection");
-            foreach (var element in elementsToChange)
-            {
-                element.ChangeOrAddAttribute("activeCell", activeCell);
-                element.ChangeOrAddAttribute("sqref", activeCell);
-            }
+            var element = doc.Descendants(ns + "selection").Single();
+            element.ChangeOrAddAttribute("activeCell", activeCell);
+            element.ChangeOrAddAttribute("sqref", activeCell);
         }
 
         private static void ReplaceWorkbookLocalPath(XDocument doc, string path)
