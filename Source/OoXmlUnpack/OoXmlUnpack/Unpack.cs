@@ -13,7 +13,9 @@ namespace OoXmlUnpack
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using System.Runtime.CompilerServices;
     using System.Text.RegularExpressions;
+    using System.Xml;
     using System.Xml.Linq;
 
     using Ionic.Zip;
@@ -202,6 +204,12 @@ namespace OoXmlUnpack
             if (this.removeRowNumbers || this.removeCellRefs || this.removeStyles || this.removeFormulaTypes || this.inlineStrings)
             {
                 this.UpdateDocument(file, doc);
+            }
+
+            if (file.Name == "core.xml")
+            {
+                var ns = doc.Root.Name.Namespace;
+                var elementToChange = doc.Root.Descendants(ns + "lastModifiedBy").ToList();
             }
 
             try
