@@ -13,9 +13,7 @@ namespace OoXmlUnpack
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Runtime.CompilerServices;
     using System.Text.RegularExpressions;
-    using System.Xml;
     using System.Xml.Linq;
 
     using Ionic.Zip;
@@ -211,6 +209,12 @@ namespace OoXmlUnpack
                 ReplaceXmlElement(doc, "lastModifiedBy", "User");
             }
 
+            //Todo: regex match for any sheet number
+            if (file.Name == "sheet1.xml")
+            {
+                ReplaceActiveCell(doc, "B1");
+            }
+
             try
             {
                 doc.Save(file.FullName);
@@ -227,6 +231,17 @@ namespace OoXmlUnpack
             foreach (var element in elementsToChange)
             {
                 element.Value = valueToReplaceElementWith;
+            }
+        }
+
+        private static void ReplaceActiveCell(XDocument doc, string activeCell)
+        {
+            var ns = doc.Root.Name.Namespace;
+            var elementsToChange = doc.Descendants(ns + "selection");
+            foreach (var element in elementsToChange)
+            {
+                element.ChangeOrAddAttribute("activeCell", activeCell);
+                element.ChangeOrAddAttribute("sqref", activeCell);
             }
         }
 
