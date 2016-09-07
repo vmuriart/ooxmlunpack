@@ -209,7 +209,11 @@ namespace OoXmlUnpack
             if (file.Name == "core.xml")
             {
                 var ns = doc.Root.Name.Namespace;
-                var elementToChange = doc.Root.Descendants(ns + "lastModifiedBy").ToList();
+                var elementsToChange = doc.Descendants(ns + "lastModifiedBy");
+                foreach (var element in elementsToChange)
+                {
+                    element.Value = "User";
+                }
             }
 
             try
