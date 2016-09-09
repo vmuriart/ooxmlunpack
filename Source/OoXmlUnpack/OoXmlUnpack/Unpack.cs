@@ -229,7 +229,7 @@ namespace OoXmlUnpack
             }
             else if (Regex.IsMatch(file.Name, "sheet[0-9]+"))
             {
-                ReplaceActiveCell(doc, "B1");
+                ReplaceActiveCell(doc, "C1");
             }
             else if (file.Name == "workbook.xml")
             {
