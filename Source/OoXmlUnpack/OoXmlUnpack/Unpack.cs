@@ -225,7 +225,8 @@ namespace OoXmlUnpack
             if (file.Name == "core.xml")
             {
                 ReplaceXmlElement(doc, "cp", "lastModifiedBy", "User");
-                ReplaceXmlElement(doc, "dcterms", "modified", "Not Set");
+                var createdDate = GetXmlElement(doc, "dcterms", "created");
+                ReplaceXmlElement(doc, "dcterms", "modified", createdDate);
             }
             else if (Regex.IsMatch(file.Name, "sheet[0-9]+"))
             {
@@ -235,6 +236,13 @@ namespace OoXmlUnpack
             {
                 ReplaceWorkbookLocalPath(doc, "Default");
             }
+        }
+
+        private static string GetXmlElement(XDocument doc, string namespacePrefix, string elementNameToGet)
+        {
+            var ns = doc.Root.GetNamespaceOfPrefix(namespacePrefix);
+            var element = doc.Descendants(ns + elementNameToGet).Single();
+            return element.Value;
         }
 
         private static void ReplaceXmlElement(XDocument doc, string namespacePrefix, string elementNameToReplace, string valueToReplaceElementWith)
