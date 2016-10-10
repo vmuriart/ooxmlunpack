@@ -15,6 +15,7 @@
         private static readonly bool KeepBackupCopy = ConfigFlag("KeepBackupCopy", true);
         private static readonly bool ProcessExtractedFiles = ConfigFlag("ProcessExtractedFiles", true);
         private static readonly bool StripValues = ConfigFlag("StripValues", false);
+        private static readonly bool CleanDataLinks = ConfigFlag("CleanDataLinks", false);
         private static readonly bool InlineStrings = ConfigFlag("InlineStrings", false);
         private static readonly bool KeepExtractedFiles = ConfigFlag("KeepExtractedFiles", true);
         private static readonly bool RelativeCellRefs = ConfigFlag("RelativeCellRefs", false);
@@ -36,6 +37,7 @@
                 message.AppendLine(string.Format("\tKeepBackupCopy: {0}", KeepBackupCopy));
                 message.AppendLine(string.Format("\tProcessExtractedFiles: {0}", ProcessExtractedFiles));
                 message.AppendLine(string.Format("\tStripValues: {0}", StripValues));
+                message.AppendLine(string.Format("\tCleanDataLinks: {0}", CleanDataLinks));
                 message.AppendLine(string.Format("\tInlineStrings: {0}", InlineStrings));
                 message.AppendLine(string.Format("\tKeepExtractedFiles: {0}", KeepExtractedFiles));
                 message.AppendLine(string.Format("\tRelativeCellRefs: {0}", RelativeCellRefs));
@@ -57,7 +59,7 @@
                     KeepBackupCopy,
                     ProcessExtractedFiles,
                     StripValues,
-                    false,
+                    CleanDataLinks,
                     InlineStrings,
                     KeepExtractedFiles,
                     false,

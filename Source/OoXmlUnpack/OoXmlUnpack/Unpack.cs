@@ -146,6 +146,9 @@ namespace OoXmlUnpack
 
         private void ProcessExtractedFolder(DirectoryInfo extractFolder)
         {
+            // This has to be UTC otherwise changes in locale or daylight savings will cause spurious changes in the zip archive
+            var fileDateTime = new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
             foreach (var file in extractFolder.EnumerateFiles())
             {
                 this.ProcessExtractedFile(file);
@@ -153,9 +156,9 @@ namespace OoXmlUnpack
                 file.Refresh();
                 if (file.Exists)
                 {
-                    file.CreationTime = new DateTime(1900, 1, 1);
-                    file.LastAccessTime = new DateTime(1900, 1, 1);
-                    file.LastWriteTime = new DateTime(1900, 1, 1);
+                    file.CreationTime = fileDateTime;
+                    file.LastAccessTime = fileDateTime;
+                    file.LastWriteTime = fileDateTime;
                 }
             }
 
@@ -167,9 +170,9 @@ namespace OoXmlUnpack
             extractFolder.Refresh();
             if (extractFolder.Exists)
             {
-                extractFolder.CreationTime = new DateTime(1900, 1, 1);
-                extractFolder.LastAccessTime = new DateTime(1900, 1, 1);
-                extractFolder.LastWriteTime = new DateTime(1900, 1, 1);
+                extractFolder.CreationTime = fileDateTime;
+                extractFolder.LastAccessTime = fileDateTime;
+                extractFolder.LastWriteTime = fileDateTime;
             }
         }
 
