@@ -35,9 +35,10 @@ namespace OoXmlUnpack
         private readonly bool removeFormulaTypes;
         private readonly bool codeStyleOutput;
         private readonly bool relativeCellRefs;
+        private readonly bool lessDocDiffNoise;
         private readonly Dictionary<int, XElement> sharedStrings = new Dictionary<int, XElement>();
         private readonly Dictionary<int, int> keptSharedStrings = new Dictionary<int, int>();
-
+        
         public Unpack(
             bool keepBackupCopy = false,
             bool processExtractedFiles = true,
@@ -50,7 +51,7 @@ namespace OoXmlUnpack
             bool removeRowNumbers = false,
             bool removeFormulaTypes = false,
             bool codeStyleOutput = false,
-            bool relativeCellRefs = false)
+            bool relativeCellRefs = false, bool lessDocDiffNoise = false)
         {
             this.keepBackupCopy = keepBackupCopy;
             this.processExtractedFiles = processExtractedFiles;
@@ -64,6 +65,7 @@ namespace OoXmlUnpack
             this.removeFormulaTypes = removeFormulaTypes;
             this.codeStyleOutput = codeStyleOutput;
             this.relativeCellRefs = relativeCellRefs;
+            this.lessDocDiffNoise = lessDocDiffNoise;
         }
 
         public void ProcessExcelFile(string sourceFile, string extractFolder = null)
@@ -207,6 +209,11 @@ namespace OoXmlUnpack
                 this.UpdateDocument(file, doc);
             }
 
+            if (this.lessDocDiffNoise)
+            {
+                ReduceUnnecessaryMinorChangesInFiles(file, doc);
+            }
+            
             try
             {
                 doc.Save(file.FullName);
@@ -214,6 +221,53 @@ namespace OoXmlUnpack
             catch
             {
             }
+        }
+
+        private static void ReduceUnnecessaryMinorChangesInFiles(FileInfo file, XDocument doc)
+        {
+            if (file.Name == "core.xml")
+            {
+                ReplaceXmlElement(doc, "cp", "lastModifiedBy", "User");
+                var createdDate = GetXmlElement(doc, "dcterms", "created");
+                ReplaceXmlElement(doc, "dcterms", "modified", createdDate);
+            }
+            else if (Regex.IsMatch(file.Name, "sheet[0-9]+"))
+            {
+                ReplaceActiveCell(doc, "C1");
+            }
+            else if (file.Name == "workbook.xml")
+            {
+                ReplaceWorkbookLocalPath(doc, "Default");
+            }
+        }
+
+        private static string GetXmlElement(XDocument doc, string namespacePrefix, string elementNameToGet)
+        {
+            var ns = doc.Root.GetNamespaceOfPrefix(namespacePrefix);
+            var element = doc.Descendants(ns + elementNameToGet).Single();
+            return element.Value;
+        }
+
+        private static void ReplaceXmlElement(XDocument doc, string namespacePrefix, string elementNameToReplace, string valueToReplaceElementWith)
+        {
+            var ns = doc.Root.GetNamespaceOfPrefix(namespacePrefix);
+            var element = doc.Descendants(ns + elementNameToReplace).Single();
+            element.Value = valueToReplaceElementWith;
+        }
+
+        private static void ReplaceActiveCell(XDocument doc, string activeCell)
+        {
+            var ns = doc.Root.Name.Namespace;
+            var element = doc.Descendants(ns + "selection").Single();
+            element.ChangeOrAddAttribute("activeCell", activeCell);
+            element.ChangeOrAddAttribute("sqref", activeCell);
+        }
+
+        private static void ReplaceWorkbookLocalPath(XDocument doc, string path)
+        {
+            var ns = doc.Root.GetNamespaceOfPrefix("mc");
+            var element = doc.Descendants(ns + "Choice").Elements().Single();
+            element.ChangeOrAddAttribute("url", path);
         }
 
         private void UpdateDocument(FileInfo file, XDocument doc)

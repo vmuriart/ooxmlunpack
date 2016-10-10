@@ -55,6 +55,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions.cs" />
     <Compile Include="Graph\AddressComparer.cs" />
     <Compile Include="Graph\GraphNode.cs" />
     <Compile Include="Graph\SheetToGraph.cs" />
